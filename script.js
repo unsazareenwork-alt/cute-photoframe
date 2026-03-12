@@ -1,112 +1,156 @@
-const video = document.getElementById("video")
-const canvas = document.getElementById("canvas")
-const ctx = canvas.getContext("2d")
-const countdown = document.getElementById("countdown")
+// Wait until HTML loads (prevents undefined element errors)
+document.addEventListener("DOMContentLoaded", () => {
 
-let photos = []
+    // Select buttons
+    const buttons = document.querySelectorAll(".btn");
 
-async function startCamera(){
+    const downloadBtn = buttons[0];
+    const takePhotoBtn = buttons[1];
+    const resetBtn = buttons[2];
 
-const stream = await navigator.mediaDevices.getUserMedia({video:true})
+    const openCameraBtn = document.querySelector(".btn1");
 
-video.srcObject = stream
+    // Select frames
+    const frame1 = document.querySelector(".frame1");
+    const frame2 = document.querySelector(".frame2");
 
-}
+    // Create video preview
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.playsInline = true;
+    video.style.width = "100%";
+    video.style.height = "100%";
+    video.style.objectFit = "cover";
 
-async function takeStrip(){
+    // Canvas for capturing photo
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-photos = []
+    let photoStep = 0;
+    let stream = null;
 
-for(let i=0;i<4;i++){
+    // OPEN CAMERA
+    openCameraBtn.addEventListener("click", async () => {
 
-await runCountdown()
+        try {
 
-takePhoto()
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-await new Promise(r=>setTimeout(r,500))
+            video.srcObject = stream;
 
-}
+            // Show preview in first frame
+            frame1.innerHTML = "";
+            frame1.appendChild(video);
 
-createStrip()
+        } catch (error) {
 
-}
+            alert("Camera access denied");
 
-function runCountdown(){
+        }
 
-return new Promise(resolve=>{
+    });
 
-let num = 3
+    // TAKE PHOTO
+    takePhotoBtn.addEventListener("click", () => {
 
-countdown.innerText = num
+        if (!stream) {
+            alert("Open camera first");
+            return;
+        }
 
-let interval = setInterval(()=>{
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-num--
+        ctx.drawImage(video, 0, 0);
 
-if(num==0){
+        const img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "cover";
 
-clearInterval(interval)
+        // First photo
+        if (photoStep === 0) {
 
-countdown.innerText="📸"
+            frame1.innerHTML = "";
+            frame1.appendChild(img);
 
-setTimeout(()=>{
+            // Move camera preview to second frame
+            frame2.innerHTML = "";
+            frame2.appendChild(video);
 
-countdown.innerText=""
+            photoStep++;
 
-resolve()
+        }
 
-},500)
+        // Second photo
+        else if (photoStep === 1) {
 
-}
+            frame2.innerHTML = "";
+            frame2.appendChild(img);
 
-else{
+            photoStep++;
 
-countdown.innerText=num
+        }
 
-}
+    });
 
-},1000)
+    // RESET STRIP
+    resetBtn.addEventListener("click", () => {
 
-})
+        frame1.innerHTML = "<p>take img</p>";
+        frame2.innerHTML = "<p>take img2</p>";
 
-}
+        photoStep = 0;
 
-function takePhoto(){
+    });
 
-const tempCanvas = document.createElement("canvas")
+    // DOWNLOAD PHOTOSTRIP
+    downloadBtn.addEventListener("click", () => {
 
-tempCanvas.width = video.videoWidth
-tempCanvas.height = video.videoHeight
+        const img1 = frame1.querySelector("img");
+        const img2 = frame2.querySelector("img");
 
-const tempCtx = tempCanvas.getContext("2d")
+        if (!img1 || !img2) {
+            alert("Take both photos first");
+            return;
+        }
 
-tempCtx.drawImage(video,0,0)
+        const stripCanvas = document.createElement("canvas");
+        const stripCtx = stripCanvas.getContext("2d");
 
-photos.push(tempCanvas)
+        // Canvas size
+        stripCanvas.width = 400;
+        stripCanvas.height = 550;
 
-}
+        // Background
+        stripCtx.fillStyle = "white";
+        stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
 
-function createStrip(){
+        const photoWidth = 350;
+        const photoHeight = 230;
 
-canvas.width = photos[0].width
-canvas.height = photos[0].height*4
+        const x = 25;
+        const y1 = 30;
+        const y2 = 290;
 
-for(let i=0;i<4;i++){
+        // Frame border
+        stripCtx.fillStyle = "#808080";
 
-ctx.drawImage(photos[i],0,i*photos[i].height)
+        stripCtx.fillRect(x - 10, y1 - 10, photoWidth + 20, photoHeight + 20);
+        stripCtx.fillRect(x - 10, y2 - 10, photoWidth + 20, photoHeight + 20);
 
-}
+        // Draw photos
+        stripCtx.drawImage(img1, x, y1, photoWidth, photoHeight);
+        stripCtx.drawImage(img2, x, y2, photoWidth, photoHeight);
 
-}
+        // Download image
+        const link = document.createElement("a");
+        link.download = "photostrip.png";
+        link.href = stripCanvas.toDataURL("image/png");
 
-function download(){
+        link.click();
 
-const link = document.createElement("a")
+    });
 
-link.download="photostrip.png"
-
-link.href = canvas.toDataURL()
-
-link.click()
-
-}
+});
