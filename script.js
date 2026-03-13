@@ -1,8 +1,8 @@
-// Wait until HTML loads (prevents undefined element errors)
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Select buttons
-    const buttons = document.querySelectorAll(".btn");
+    const buttons = document.querySelectorAll(".cute-btn");
 
     const downloadBtn = buttons[0];
     const takePhotoBtn = buttons[1];
@@ -74,6 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             frame1.innerHTML = "";
             frame1.appendChild(img);
+           
 
             // Move camera preview to second frame
             frame2.innerHTML = "";
@@ -88,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             frame2.innerHTML = "";
             frame2.appendChild(img);
+           
 
             photoStep++;
 
@@ -106,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // DOWNLOAD PHOTOSTRIP
-    downloadBtn.addEventListener("click", () => {
+   downloadBtn.addEventListener("click", () => {
 
         const img1 = frame1.querySelector("img");
         const img2 = frame2.querySelector("img");
