@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetBtn = buttons[2];
 
     const openCameraBtn = document.querySelector(".btn1");
+    const closeCameraBtn = document.querySelector(".btn2");
 
     // Select frames
     const frame1 = document.querySelector(".frame1");
@@ -49,6 +50,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     });
+
+    // CLOSE CAMERA
+     closeCameraBtn.addEventListener("click", () => {
+
+     if (stream) {
+
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+
+        frame1.innerHTML = "<p></p>";
+        frame2.innerHTML = "<p></p>";
+
+    }
+
+});
 
     // TAKE PHOTO
     takePhotoBtn.addEventListener("click", () => {
@@ -97,15 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     });
 
-    // RESET STRIP
-    resetBtn.addEventListener("click", () => {
-
-        frame1.innerHTML = "<p>take img</p>";
-        frame2.innerHTML = "<p>take img2</p>";
-
-        photoStep = 0;
-
-    });
+    
 
     // DOWNLOAD PHOTOSTRIP
    downloadBtn.addEventListener("click", () => {
