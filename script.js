@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // OPEN CAMERA
     openCameraBtn.addEventListener("click", async () => {
+        photoStep = 0;
 
         try {
 
@@ -54,10 +55,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // CLOSE CAMERA
      closeCameraBtn.addEventListener("click", () => {
 
-     if (stream) {
+    if (stream) {
 
         stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
         stream = null;
+
+        photoStep = 0;
 
         frame1.innerHTML = "<p></p>";
         frame2.innerHTML = "<p></p>";
