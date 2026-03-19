@@ -1,170 +1,118 @@
-
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Select buttons
-    const buttons = document.querySelectorAll(".cute-btn");
-
-    const downloadBtn = buttons[0];
-    const takePhotoBtn = buttons[1];
-    const resetBtn = buttons[2];
-
+    const downloadBtn   = document.querySelectorAll(".cute-btn")[0];
+    const takePhotoBtn  = document.querySelectorAll(".cute-btn")[1];
+    const resetBtn      = document.querySelector(".btn2");
     const openCameraBtn = document.querySelector(".btn1");
-    const closeCameraBtn = document.querySelector(".btn2");
 
-    // Select frames
     const frame1 = document.querySelector(".frame1");
     const frame2 = document.querySelector(".frame2");
 
-    // Create video preview
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.playsInline = true;
-    video.style.width = "100%";
-    video.style.height = "100%";
-    video.style.objectFit = "cover";
-
-    // Canvas for capturing photo
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
+    let stream    = null;
     let photoStep = 0;
-    let stream = null;
+    let photo1    = null;
+    let photo2    = null;
+
+    const video = document.createElement("video");
+    video.autoplay    = true;
+    video.playsInline = true;
+    video.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
 
     // OPEN CAMERA
     openCameraBtn.addEventListener("click", async () => {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
         photoStep = 0;
-
-        try {
-
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-
-            video.srcObject = stream;
-
-            // Show preview in first frame
-            frame1.innerHTML = "";
-            frame1.appendChild(video);
-
-        } catch (error) {
-
-            alert("Camera access denied");
-
-        }
-
+        photo1 = null;
+        photo2 = null;
+        frame1.innerHTML = "";
+        frame1.appendChild(video);
+        frame2.innerHTML = "";
     });
 
-    // CLOSE CAMERA
-     closeCameraBtn.addEventListener("click", () => {
-
-    if (stream) {
-
-        stream.getTracks().forEach(track => track.stop());
+    // RESET
+    resetBtn.addEventListener("click", () => {
+        if (stream) stream.getTracks().forEach(t => t.stop());
         video.srcObject = null;
         stream = null;
-
         photoStep = 0;
-
-        frame1.innerHTML = "<p></p>";
-        frame2.innerHTML = "<p></p>";
-
-    }
-
-});
+        photo1 = null;
+        photo2 = null;
+        frame1.innerHTML = "";
+        frame2.innerHTML = "";
+    });
 
     // TAKE PHOTO
     takePhotoBtn.addEventListener("click", () => {
+        if (!stream) { alert("Open camera first!"); return; }
 
-        if (!stream) {
-            alert("Open camera first");
-            return;
-        }
+        const snap = document.createElement("canvas");
+        snap.width  = video.videoWidth;
+        snap.height = video.videoHeight;
+        snap.getContext("2d").drawImage(video, 0, 0);
+        snap.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        ctx.drawImage(video, 0, 0);
-
-        const img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "cover";
-
-        // First photo
         if (photoStep === 0) {
-
+            photo1 = snap;
             frame1.innerHTML = "";
-            frame1.appendChild(img);
-           
-
-            // Move camera preview to second frame
+            frame1.appendChild(snap);
             frame2.innerHTML = "";
             frame2.appendChild(video);
+            photoStep = 1;
 
-            photoStep++;
-
-        }
-
-        // Second photo
-        else if (photoStep === 1) {
-
+        } else if (photoStep === 1) {
+            photo2 = snap;
             frame2.innerHTML = "";
-            frame2.appendChild(img);
-           
-
-            photoStep++;
-
+            frame2.appendChild(snap);
+            photoStep = 2;
         }
-
     });
 
-    
-
     // DOWNLOAD PHOTOSTRIP
-   downloadBtn.addEventListener("click", () => {
+    downloadBtn.addEventListener("click", () => {
+        if (!photo1 || !photo2) { alert("Take both photos first!"); return; }
 
-        const img1 = frame1.querySelector("img");
-        const img2 = frame2.querySelector("img");
+        const mainRect = document.querySelector(".frame-main").getBoundingClientRect();
+        const f1Rect   = frame1.getBoundingClientRect();
+        const f2Rect   = frame2.getBoundingClientRect();
 
-        if (!img1 || !img2) {
-            alert("Take both photos first");
-            return;
+        const f1x = f1Rect.left - mainRect.left;
+        const f1y = f1Rect.top  - mainRect.top;
+        const f2x = f2Rect.left - mainRect.left;
+        const f2y = f2Rect.top  - mainRect.top;
+
+        const out = document.createElement("canvas");
+        out.width  = mainRect.width;
+        out.height = mainRect.height;
+        const ctx  = out.getContext("2d");
+
+        function finish() {
+            // pink borders behind frames
+            ctx.fillStyle = "rgb(228,212,212)";
+            ctx.fillRect(f1x - 20, f1y - 20, f1Rect.width + 40, f1Rect.height + 40);
+            ctx.fillRect(f2x - 20, f2y - 20, f2Rect.width + 40, f2Rect.height + 40);
+
+            // draw both photos
+            ctx.drawImage(photo1, f1x, f1y, f1Rect.width, f1Rect.height);
+            ctx.drawImage(photo2, f2x, f2y, f2Rect.width, f2Rect.height);
+
+            // outer border
+            ctx.strokeStyle = "rgb(88,24,24)";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(2, 2, out.width - 4, out.height - 4);
+
+            const a = document.createElement("a");
+            a.download = "photostrip.png";
+            a.href = out.toDataURL("image/png");
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
-        const stripCanvas = document.createElement("canvas");
-        const stripCtx = stripCanvas.getContext("2d");
-
-        // Canvas size
-        stripCanvas.width = 400;
-        stripCanvas.height = 550;
-
-        // Background
-        stripCtx.fillStyle = "white";
-        stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
-
-        const photoWidth = 350;
-        const photoHeight = 230;
-
-        const x = 25;
-        const y1 = 30;
-        const y2 = 290;
-
-        // Frame border
-        stripCtx.fillStyle = "#808080";
-
-        stripCtx.fillRect(x - 10, y1 - 10, photoWidth + 20, photoHeight + 20);
-        stripCtx.fillRect(x - 10, y2 - 10, photoWidth + 20, photoHeight + 20);
-
-        // Draw photos
-        stripCtx.drawImage(img1, x, y1, photoWidth, photoHeight);
-        stripCtx.drawImage(img2, x, y2, photoWidth, photoHeight);
-
-        // Download image
-        const link = document.createElement("a");
-        link.download = "photostrip.png";
-        link.href = stripCanvas.toDataURL("image/png");
-
-        link.click();
-
+        const bg = new Image();
+        bg.onload  = () => { ctx.drawImage(bg, 0, 0, out.width, out.height); finish(); };
+        bg.onerror = () => { ctx.fillStyle = "#f0ddd0"; ctx.fillRect(0, 0, out.width, out.height); finish(); };
+        bg.src = "bg2.jpeg";
     });
 
 });
